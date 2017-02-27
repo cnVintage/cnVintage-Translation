@@ -1,5 +1,6 @@
 # cnVintage-Translation
 Chinese translation scripts for YouTube videos.
 
-TODO:
-- [ ] https://www.youtube.com/watch?v=fWqBmmPQP40
+Folders:
+- CCC : Chaos Communication Congress Talks
+- 8BitGuy : The 8-Bit Guy

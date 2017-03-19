@@ -1,0 +1,3559 @@
+﻿1
+00:00:00,000 --> 00:00:14,170
+好的让我们开始吧
+
+2
+00:00:14,170 --> 00:00:21,850
+接下来的演讲是关于MOS 6502 CPU的逆向工程的
+
+3
+00:00:21,850 --> 00:00:30,580
+就是Apple II, NES和C64上使用的CPU
+
+4
+00:00:30,580 --> 00:00:33,250
+有请演讲嘉宾Michael Steil
+
+5
+00:00:33,250 --> 00:00:40,360
+谢谢（啪啪啪啪啪啪）
+
+6
+00:00:40,870 --> 00:00:47,410
+大家好
+正如大家刚才所闻，本讲的主题是MOS 6502 CPU的逆向工程
+
+7
+00:00:47,410 --> 00:00:52,540
+我的名字是Michael Steil(用德语和英语各念了一遍)
+
+8
+00:00:53,079 --> 00:00:58,870
+副标题是 60分钟里的3510个晶体管
+
+9
+00:01:00,489 --> 00:01:04,879
+让我先来了解下观众的情况吧
+
+10
+00:01:05,480 --> 00:01:08,640
+之前写过汇编的观众让我看见你们的双手~
+
+11
+00:01:08,640 --> 00:01:15,250
+（2333333）呜哦好好好那谁没写过...不知道汇编是什么
+
+12
+00:01:15,250 --> 00:01:19,340
+很好 那有谁之前写过6502的汇编么
+
+13
+00:01:19,479 --> 00:01:23,381
+好的……开头十分钟你们这群写过6502汇编的人不要觉得无聊啊~
+
+14
+00:01:23,381 --> 00:01:30,698
+那你们有谁玩过6502模拟器或者是在FPGA上实现过6502？
+
+15
+00:01:31,460 --> 00:01:34,520
+一个两个三个四个……？好吧
+
+16
+00:01:34,520 --> 00:01:39,348
+那有谁是6502的原始设计组成员吗
+
+17
+00:01:39,348 --> 00:01:41,180
+（2333333）（啪啪啪啪啪）
+
+18
+00:01:45,290 --> 00:01:47,443
+看来大家都很诚实……
+
+19
+00:01:47,853 --> 00:01:53,461
+接下来给不熟悉6502历史的观众一个简介
+
+20
+00:01:53,461 --> 00:02:00,614
+6502的出品公司，MOS，是一群从摩托罗拉辞职的人在1974年创办的。
+
+21
+00:02:00,614 --> 00:02:03,342
+他们之前是就在摩托罗拉的6800 CPU小组
+
+22
+00:02:03,342 --> 00:02:07,954
+这个小组的核心成员是Chuck Peddle
+
+23
+00:02:07,954 --> 00:02:17,215
+他带领这个团队在1975年推出了6502
+
+24
+00:02:17,215 --> 00:02:20,720
+这个芯片被用在了很多当时的电脑上
+
+25
+00:02:20,720 --> 00:02:23,007
+比如这边的乔布斯和沃兹两位
+
+26
+00:02:23,007 --> 00:02:34,016
+所以说6502是个很受欢迎的CPU
+被用在了以下所有设备中：
+
+27
+00:02:34,016 --> 00:02:40,068
+Apple I, Apple II,  BBC Micro, 全系列的Commodore
+
+28
+00:02:40,068 --> 00:02:48,939
+Atari全系8位机 //Gaming console 和 System？
+任天堂的NES和SNES，以及……
+
+29
+00:02:48,939 --> 00:03:00,722
+Bender和Flexo！（《飞出个未来》中的角色）
+
+30
+00:03:00,722 --> 00:03:07,588
+还有不要忘了T-800系列终结者……
+
+31
+00:03:07,588 --> 00:03:10,459
+
+
+32
+00:03:10,459 --> 00:03:13,724
+other cpus which were kind of successful
+like the z80 but if you compare them
+
+33
+00:03:13,724 --> 00:03:17,642
+672 had sixty percent few transistors is
+what's much more optimized it wasn't as
+
+34
+00:03:17,642 --> 00:03:18,655
+powerful but it was even faster
+
+35
+00:03:18,655 --> 00:03:21,793
+it was more constrained but it was also
+more elegant and some people would say
+
+36
+00:03:21,793 --> 00:03:24,663
+that elegance or perfection comes from
+simplicity anyway so my talk consists of
+
+37
+00:03:24,663 --> 00:03:31,182
+three parts part number 16 / - from top
+down meaning programming model how you
+
+38
+00:03:31,206 --> 00:03:40,073
+
+
+39
+00:03:39,711 --> 00:03:44,211
+would interact with it so don't feel
+bored second 165 or two from the bottom
+
+40
+00:03:43,235 --> 00:03:52,976
+up
+
+41
+00:03:44,722 --> 00:03:48,472
+meaning how to disassemble a 65 / - how
+to look at the gates how to take
+
+42
+00:03:48,472 --> 00:03:52,401
+photographs how to understand what's
+going on inside at the gate level and
+
+43
+00:03:52,401 --> 00:03:55,431
+then in the third third pieces from the
+inside out
+
+44
+00:03:56,032 --> 00:04:00,562
+meaning what have we learned from
+deconstructing the 65 / - what do we
+
+45
+00:04:00,562 --> 00:04:02,931
+know about the components how do they
+interact
+
+46
+00:04:02,931 --> 00:04:06,051
+where do all these weird quirks and
+stuff come from
+
+47
+00:04:06,051 --> 00:04:12,412
+so part number 16 of our two from top
+down whenever you want to start with a
+
+48
+00:04:12,412 --> 00:04:15,412
+new cpu you would start with some data
+sheet or something
+
+49
+00:04:16,162 --> 00:04:21,171
+let's not do that let's just look at
+code for all those who haven't seen a
+
+50
+00:04:21,170 --> 00:04:23,302
+65-64 code
+
+51
+00:04:23,302 --> 00:04:28,432
+let's walk through some structions here
+and sta store accumulator you have three
+
+52
+00:04:28,432 --> 00:04:33,952
+registers a XY jsr jump subroutine this
+is the call instruction led a load
+
+53
+00:04:33,952 --> 00:04:40,581
+accumulator compared to that compares
+the a register DC branch if Carrie clear
+
+54
+00:04:40,581 --> 00:04:44,481
+so it branches if it's lower than the
+compared value jump the serpentine again
+
+55
+00:04:44,481 --> 00:04:47,932
+then there's the addition instruction
+you always have to clear the carry flag
+
+56
+00:04:47,932 --> 00:04:50,962
+before you add because the Kerry also
+gets added if you don't want the extra
+
+57
+00:04:50,962 --> 00:04:55,162
+carry be Q branch equal so it's also
+always interested in these
+
+58
+00:04:55,912 --> 00:04:59,152
+in this very low level kind of
+programming is to know how the encoding
+
+59
+00:04:59,152 --> 00:04:59,692
+works
+
+60
+00:04:59,692 --> 00:05:04,042
+so the opcodes here the opcode is always
+eight bits in size so it was a 1 by top
+
+61
+00:05:04,042 --> 00:05:10,072
+code and which encodes both the
+instruction and the addressing mode and
+
+62
+00:05:10,072 --> 00:05:13,282
+the operand is either zero one or two
+bites
+
+63
+00:05:13,282 --> 00:05:16,432
+so at CLC clear Carrie doesn't have an
+operand so it's a single byte
+
+64
+00:05:16,432 --> 00:05:19,492
+instruction and goes up to three bites
+for the jump subroutine which has a
+
+65
+00:05:19,492 --> 00:05:23,632
+16-bit address after it you can see an
+interesting thing here in the first line
+
+66
+00:05:23,632 --> 00:05:26,362
+already store and got a 56
+
+67
+00:05:26,362 --> 00:05:31,012
+it's not something in memory memory is
+16 bits is 16 bits wide 16 bits
+
+68
+00:05:31,012 --> 00:05:34,462
+addresses but in this case because in
+the first page of memory
+
+69
+00:05:34,462 --> 00:05:38,332
+there's an extra encoding which makes
+the instruction shorter and even faster
+
+70
+00:05:39,592 --> 00:05:45,052
+so from a more theoretical point of view
+what's the programming model and you
+
+71
+00:05:45,052 --> 00:05:48,982
+have the a register the accumulator it
+stores everything and it transfers
+
+72
+00:05:48,982 --> 00:05:53,482
+everything whenever you handle data when
+ever do to you do arithmetic and logic
+
+73
+00:05:53,482 --> 00:05:57,622
+it goes through your single a register
+and the index registers which aren't as
+
+74
+00:05:57,622 --> 00:06:02,572
+powerful they can count up and down and
+produced as an index in in accessing an
+
+75
+00:06:02,572 --> 00:06:05,842
+array but you can't do any of the
+arithmetic logic on them
+
+76
+00:06:05,842 --> 00:06:08,872
+you have the process status register
+it's a bit
+
+77
+00:06:08,872 --> 00:06:14,002
+you have four bits in there which are
+about arithmetic and logic one bit
+
+78
+00:06:14,002 --> 00:06:17,722
+which signals its decimal mode i'll talk
+about this mode later
+
+79
+00:06:17,722 --> 00:06:25,222
+it's quite boring and there's two more
+bits about exceptions for attending the
+
+80
+00:06:25,222 --> 00:06:30,111
+program counter at sixteen 16-bit
+address spaces so it's a 16-bit program
+
+81
+00:06:30,111 --> 00:06:34,312
+counter and the stack pointer is also 16
+bits and management has to be an address
+
+82
+00:06:34,312 --> 00:06:37,642
+but the upper eight bits are fixed
+they're always hot color to one so the
+
+83
+00:06:37,642 --> 00:06:40,492
+second register is actually only eight
+bits
+
+84
+00:06:40,492 --> 00:06:44,692
+so this has some applications to the
+whole programming model hear about the
+
+85
+00:06:44,692 --> 00:06:50,692
+address space 64 kilobytes of address
+space and the first two pages of 256
+
+86
+00:06:50,692 --> 00:06:56,482
+bytes each our special so first page for
+the zeroth pages 0 page goes up to FF
+
+87
+00:06:56,482 --> 00:07:02,182
+and it's meant for all these addressing
+modes where if your address is it falls
+
+88
+00:07:02,182 --> 00:07:05,272
+within the first page of memory then you
+have a special encoding
+
+89
+00:07:05,272 --> 00:07:07,701
+and everything is faster and there are
+some things you can only do with zero
+
+90
+00:07:07,701 --> 00:07:13,942
+page because the the system is rather a
+registered constraint you only have this
+
+91
+00:07:13,942 --> 00:07:17,631
+accumulator register 10 pages very
+useful and the stack is always
+
+92
+00:07:17,631 --> 00:07:20,331
+constrained to the first page
+
+93
+00:07:20,331 --> 00:07:27,321
+szostak counts down from 01 FF down to 0
+1 0 0 so this rather complicated slide
+
+94
+00:07:27,321 --> 00:07:31,432
+and it'll get worse supposed to give you
+an overview of all the instructions that
+
+95
+00:07:31,432 --> 00:07:36,171
+exist and how to put them into into some
+or somewhere and so that you have seen
+
+96
+00:07:36,171 --> 00:07:38,481
+all the members at some point so you
+don't have to
+
+97
+00:07:38,481 --> 00:07:42,951
+in case you don't know this already you
+don't have to remember these things
+
+98
+00:07:42,951 --> 00:07:46,851
+this load instructions you can load from
+memory into the accumulator into x and y
+
+99
+00:07:46,851 --> 00:07:48,442
+if you want to store
+
+100
+00:07:48,442 --> 00:07:54,712
+asdasdasd y into memory you can transfer
+between registers that two groups of
+
+101
+00:07:54,712 --> 00:07:57,382
+read modify write instructions
+
+102
+00:07:57,382 --> 00:08:02,152
+the shift instructions work with the
+accumulator or with memory you can
+
+103
+00:08:02,152 --> 00:08:06,891
+decrement an increment memory and as
+well as the index registers because
+
+104
+00:08:06,891 --> 00:08:13,492
+index you have to count up you have to
+come down and also done by the ALU is
+
+105
+00:08:13,492 --> 00:08:20,331
+addition and subtraction as well as the
+boolean operations and there's the the
+
+106
+00:08:20,331 --> 00:08:24,442
+other two which this video we compare
+one is basically just a subtraction but
+
+107
+00:08:24,442 --> 00:08:29,752
+only stores the flags and not the result
+and the bit is an end only stores there
+
+108
+00:08:29,752 --> 00:08:32,151
+were the flags of the results
+
+109
+00:08:32,150 --> 00:08:38,181
+speaking about flags you can set and
+clear some flags and you can branch
+
+110
+00:08:38,182 --> 00:08:43,312
+depending on whether flag is set or
+cleared so these are the four arithmetic
+
+111
+00:08:43,312 --> 00:08:47,452
+and logic bits in the program of
+processor status register
+
+112
+00:08:47,452 --> 00:08:53,302
+there's also the the unconditional jump
+and jump subroutine and RTS is a
+
+113
+00:08:53,302 --> 00:08:57,922
+function call and function return and if
+you want to do software interrupts and
+
+114
+00:08:57,922 --> 00:09:02,062
+interrupt work the same way but there's
+a soft interrupt break and return from
+
+115
+00:09:02,062 --> 00:09:05,512
+interrupt which just the reverse and for
+stack
+
+116
+00:09:05,512 --> 00:09:10,461
+you can only push the a register as well
+as the stack as well as the their
+
+117
+00:09:10,461 --> 00:09:14,922
+process of status register and these are
+all the instructions that exists
+
+118
+00:09:14,922 --> 00:09:18,042
+so for all the general-purpose
+instructions these are the addressing
+
+119
+00:09:18,042 --> 00:09:20,922
+modes that can be used in combination
+with these there's an immediate
+
+120
+00:09:20,922 --> 00:09:25,542
+addressing mode for using constants
+absolute addressing modes absolute and x
+
+121
+00:09:25,542 --> 00:09:30,822
+and y indexed the same always with zero
+patience to special ones for special 0
+
+122
+00:09:30,822 --> 00:09:34,242
+page stuff which work around some other
+deficiencies of the design or some
+
+123
+00:09:34,242 --> 00:09:36,132
+limitations of the design
+
+124
+00:09:36,132 --> 00:09:39,192
+let's walk through the more important
+
+125
+00:09:39,192 --> 00:09:44,141
+addressing modes for now so immediate
+addressing you have the hash sign right
+
+126
+00:09:44,141 --> 00:09:44,771
+there
+
+127
+00:09:44,771 --> 00:09:49,632
+you load a constant in the accumulator
+in this case lda load a so if we do that
+
+128
+00:09:49,632 --> 00:09:56,292
+we have the constant of 17 in a absolute
+addressing means you have a 16-bit our
+
+129
+00:09:56,292 --> 00:10:01,872
+print their fuel load from 314 we look
+up in memory address 314
+
+130
+00:10:01,872 --> 00:10:07,482
+what we get is a 31 and we have 34 1 in
+a and then 0 page addressing is this
+
+131
+00:10:07,482 --> 00:10:09,102
+optimization we
+
+132
+00:10:09,102 --> 00:10:12,552
+it's a different encoding we only have
+an 8-bit operant we load from a dress to
+
+133
+00:10:12,552 --> 00:10:22,632
+look it up in your page and we find a0
+a0 absolute , X means absolute plus X so
+
+134
+00:10:22,632 --> 00:10:23,442
+the X register
+
+135
+00:10:23,442 --> 00:10:29,232
+it's added to the constant pointer that
+we encode in the instruction stream so a
+
+136
+00:10:29,232 --> 00:10:33,492
+200 plus X if X is a in our example we
+love from address
+
+137
+00:10:33,492 --> 00:10:38,442
+- Oh a look it up to a that's 52
+
+138
+00:10:38,442 --> 00:10:43,091
+so we assume that a 200 we just have an
+array of bytes and x is iterating over
+
+139
+00:10:43,091 --> 00:10:45,882
+those absolute , why
+
+140
+00:10:45,882 --> 00:10:51,612
+same thing with why register that pretty
+symmetric the same exist with zero page
+
+141
+00:10:51,612 --> 00:10:55,271
+but the interesting thing is he here
+that there's always there's a wrap
+
+142
+00:10:55,271 --> 00:11:00,192
+around inside 0 page so if X in this
+case is 16 or above it would wrap around
+
+143
+00:11:00,192 --> 00:11:04,721
+20 again so you cannot exit 0 page with
+this indexing
+
+144
+00:11:04,721 --> 00:11:10,031
+same with 0 pitch , X comma Y now there
+are two more and more interesting once
+
+145
+00:11:10,031 --> 00:11:13,571
+the indirect ones because as I said we
+register start we don't even have a
+
+146
+00:11:13,571 --> 00:11:17,502
+16-bit registers at all so what if you
+want to use a . if you have a 16-bit .
+
+147
+00:11:17,502 --> 00:11:18,971
+you cannot hold it in a register
+
+148
+00:11:18,971 --> 00:11:23,682
+I like on the ca for example so you have
+to store these pointers in 0 page and
+
+149
+00:11:23,682 --> 00:11:29,261
+you can use 0 page as pointers and then
+use them directly instructions like this
+
+150
+00:11:29,261 --> 00:11:38,112
+one listens in this addressing 10 page x
+indexed indirect means that we assume
+
+151
+00:11:38,112 --> 00:11:44,682
+that ad in the paper in this example we
+have an array of pointers and windex the
+
+152
+00:11:44,682 --> 00:11:48,461
+array with X and would then we load from
+one of these pointers
+
+153
+00:11:48,461 --> 00:11:56,682
+so what the CPU does it looks at a c HC
+because exorcizo it indexes that it gets
+
+154
+00:11:56,682 --> 00:12:01,751
+the pointer little indian the correct
+indigenous as everyone knows and it
+
+155
+00:12:01,751 --> 00:12:04,961
+loads from that address c43 yet there's
+another look up
+
+156
+00:12:05,531 --> 00:12:10,211
+gets the value into a so it's double
+indirect it's slow takes five cycles or
+
+157
+00:12:10,211 --> 00:12:15,341
+six cycles or something then the same
+thing we're not the same thing this is 0
+
+158
+00:12:15,341 --> 00:12:21,912
+page first indirect and then X Y index
+which is much more useful because the
+
+159
+00:12:21,912 --> 00:12:22,692
+streets
+
+160
+00:12:22,692 --> 00:12:27,672
+14 and 15 in 0 page is a point as a
+16-bit pointer this point in this case
+
+161
+00:12:27,672 --> 00:12:33,401
+at fourteen fifteen is da 200 and then
+afterwards we add Y of 28 so we read
+
+162
+00:12:33,401 --> 00:12:39,042
+from d 8 28 so only whenever you have to
+count up somewhere and you don't know
+
+163
+00:12:39,042 --> 00:12:44,711
+the point to put in 0 page and you can
+work with that . from their stack
+
+164
+00:12:44,711 --> 00:12:49,302
+doesn't have much addressing it's all
+implicit instructions stack works like
+
+165
+00:12:49,302 --> 00:12:52,662
+this normally you would initially lies
+it to a fifth which is the top of step
+
+166
+00:12:53,531 --> 00:12:57,071
+if you put something on the stack it
+stores at first and then decrement the
+
+167
+00:12:57,071 --> 00:12:57,761
+stack pointer
+
+168
+00:12:57,761 --> 00:13:01,751
+let's do that again let's push something
+it stores it with a stack pointer points
+
+169
+00:13:01,751 --> 00:13:04,091
+and decrements stack pointer
+
+170
+00:13:04,091 --> 00:13:08,141
+so if we pull something then it
+increments the stack pointer and then
+
+171
+00:13:08,141 --> 00:13:09,102
+read from the address
+
+172
+00:13:09,102 --> 00:13:12,221
+let's do it again increment and read
+
+173
+00:13:12,221 --> 00:13:16,482
+so this decimal is something that I
+guess what you must be a seventies guy
+
+174
+00:13:16,482 --> 00:13:20,172
+in a tease guy to fully understand
+decimal mode or maybe maybe people that
+
+175
+00:13:20,172 --> 00:13:26,742
+financial stuff on the Commodores and
+Ataris so decimal obesity binary coded
+
+176
+00:13:26,742 --> 00:13:35,501
+decimal is meant to to optimize the way
+you store numbers integer numbers which
+
+177
+00:13:35,501 --> 00:13:41,682
+would print anyway so in a normal case
+if you add two to nine you would get be
+
+178
+00:13:41,682 --> 00:13:45,941
+X additional be but if you have a
+decimal mode turned on then
+
+179
+00:13:45,941 --> 00:13:52,001
+without this be any slower anything you
+will get a result of 11 which is hex 11
+
+180
+00:13:52,001 --> 00:13:52,451
+which is
+
+181
+00:13:52,451 --> 00:13:56,591
+I mean wrong in the binary sense but
+from our decimal perspective this would
+
+182
+00:13:56,591 --> 00:13:58,691
+be the correct answer
+
+183
+00:13:58,691 --> 00:14:04,781
+so this was all the user mode kind of do
+so far as more systems perspective these
+
+184
+00:14:04,781 --> 00:14:08,052
+vectors are interesting what happens
+with interrupts with reset and i RQ
+
+185
+00:14:08,052 --> 00:14:11,381
+there are three vectors at the top of
+the address space for any my own mask
+
+186
+00:14:11,381 --> 00:14:15,071
+will interrupt for the recent vector and
+for the IQ vector at the very top of
+
+187
+00:14:15,071 --> 00:14:21,042
+memory will talk about these vectors
+later that's interesting thing
+
+188
+00:14:21,552 --> 00:14:25,331
+so looking at the all the instructions
+that we have been looking at all the
+
+189
+00:14:25,331 --> 00:14:28,362
+addressing modes that we have if we
+combine them if this if you were
+
+190
+00:14:28,362 --> 00:14:32,651
+completely completely orthogonal being
+able to combine every general purpose
+
+191
+00:14:32,651 --> 00:14:37,961
+operation with every addressing mode it
+wouldn't fit into the 256 different op
+
+192
+00:14:37,961 --> 00:14:38,742
+codes
+
+193
+00:14:38,742 --> 00:14:42,102
+so what they did with the opcodes is
+only include the ones would really make
+
+194
+00:14:42,102 --> 00:14:46,511
+sense the ones which are most
+interesting most important so only about
+
+195
+00:14:46,511 --> 00:14:51,191
+sixty percent of the opcode space is
+used and the rest is just well they say
+
+196
+00:14:51,191 --> 00:14:52,602
+it's undefined
+
+197
+00:14:52,602 --> 00:14:58,362
+so let's walk real quick through another
+example here this is something taken
+
+198
+00:14:58,362 --> 00:15:00,761
+from some random room somewhere
+
+199
+00:15:00,761 --> 00:15:05,321
+you might have seen the code might have
+used the code we learned something from
+
+200
+00:15:05,321 --> 00:15:09,371
+zero page we compare it against a
+constant if it's not that constant let's
+
+201
+00:15:09,371 --> 00:15:10,571
+jump out
+
+202
+00:15:10,571 --> 00:15:16,331
+let's get the the hybrid the upper 8-bit
+let's also compare it to a constant it's
+
+203
+00:15:16,331 --> 00:15:19,422
+not 65 or two so let's jump out
+
+204
+00:15:19,422 --> 00:15:24,792
+otherwise we did a subtract there so we
+have a zero in a now so we store 0 into
+
+205
+00:15:24,792 --> 00:15:25,451
+11
+
+206
+00:15:25,451 --> 00:15:31,721
+we copy the 0 into the why register we
+load an 80 and put it into twelve eleven
+
+207
+00:15:31,721 --> 00:15:39,401
+twelve we now have a point of the ex
+8,000 we load an index register of a of
+
+208
+00:15:39,401 --> 00:15:43,631
+a which is 10 so we countdown 10 from
+somewhere we use that industry is just
+
+209
+00:15:43,631 --> 00:15:45,792
+the right there we load something from
+wrong
+
+210
+00:15:45,792 --> 00:15:52,991
+so we index summer Rae counting down
+from ten mask of some bits story at that
+
+211
+00:15:52,991 --> 00:15:58,302
+pointer at a thousand plus y increment Y
+if there's no overflow skip the next
+
+212
+00:15:58,302 --> 00:16:02,531
+instruction otherwise increment that 80
+that is stored there to anyone
+
+213
+00:16:02,531 --> 00:16:10,001
+and so on and then count down the X so
+the 10 down to zero also loop recommend
+
+214
+00:16:10,001 --> 00:16:13,542
+how many times you want to do it that's
+another parameter that we got a branch
+
+215
+00:16:13,542 --> 00:16:18,281
+and RTS returned from the protein so you
+can see the parameters that we got were
+
+216
+00:16:18,281 --> 00:16:22,871
+stored in 11 12 and 0 page and 40 60
+page so every time we have to do a lot
+
+217
+00:16:22,871 --> 00:16:23,982
+about the zero page
+
+218
+00:16:23,982 --> 00:16:28,571
+now the question is what does this code
+do so if you have ever used one of the
+
+219
+00:16:28,571 --> 00:16:31,211
+later pet models the , pits
+
+220
+00:16:31,211 --> 00:16:35,651
+if you said this on the command line and
+wait instruction is a legitimate
+
+221
+00:16:35,651 --> 00:16:37,751
+instruction does interesting stuff
+
+222
+00:16:37,751 --> 00:16:41,531
+if it if you use the concept of 65 / -
+it would do that
+
+223
+00:16:43,122 --> 00:16:49,662
+now why is that that's because well Bill
+Gates wrote it , door
+
+224
+00:16:49,662 --> 00:16:53,712
+I'm licensed like Microsoft basic for
+the pet then went back to Microsoft for
+
+225
+00:16:53,712 --> 00:16:56,682
+a bug-fix release for later versions of
+the pet and Microsoft kind of got pissed
+
+226
+00:16:56,682 --> 00:16:59,832
+because they didn't they didn't include
+them and then Microsoft anyway it's a
+
+227
+00:16:59,832 --> 00:17:05,232
+common basic so that just put this
+easter egg in and it's a pretty it's
+
+228
+00:17:05,232 --> 00:17:08,112
+proved we were pretty sure that it's
+really Bill Gates who wrote it because
+
+229
+00:17:08,112 --> 00:17:11,292
+back at those times 76 77
+
+230
+00:17:11,291 --> 00:17:15,821
+microsoft hit three employees and one of
+them could encode and the other one is
+
+231
+00:17:15,822 --> 00:17:18,292
+EAD and
+
+232
+00:17:18,291 --> 00:17:21,681
+so he Bill Gates did rights to vote to
+hold at some point
+
+233
+00:17:21,682 --> 00:17:25,852
+what's interesting about an architecture
+like that and architectures that you
+
+234
+00:17:25,852 --> 00:17:28,912
+know the length of your cycle is also
+about understanding what's actually
+
+235
+00:17:28,912 --> 00:17:33,082
+going on inside not just about
+optimization so every memory access is a
+
+236
+00:17:33,082 --> 00:17:37,192
+single cycle the whole system is very
+memory bound so mostly only look at how
+
+237
+00:17:37,192 --> 00:17:41,001
+many memory access do you have for
+executing instructions and you know how
+
+238
+00:17:41,001 --> 00:17:45,772
+many cycles it will take but there's a
+special case of every instruction at
+
+239
+00:17:45,772 --> 00:17:47,392
+least takes two cycles
+
+240
+00:17:47,392 --> 00:17:51,022
+if we go through this real quick a lot
+of 10 page takes three cycles because
+
+241
+00:17:51,022 --> 00:17:54,952
+you have the load you have the operation
+then you have to load from zero page to
+
+242
+00:17:54,952 --> 00:17:58,042
+compare has to because the instruction
+is two cycles it doesn't do any other
+
+243
+00:17:58,042 --> 00:18:02,001
+fetch and this one has to because it's
+also provide instruction if the branch
+
+244
+00:18:02,001 --> 00:18:05,212
+is taken as an extra and an extra cycle
+there
+
+245
+00:18:05,212 --> 00:18:10,251
+we have we've had this one this one that
+the this transfer is only a single bite
+
+246
+00:18:10,251 --> 00:18:16,462
+but we have a minimum of two cycles then
+this one is interesting
+
+247
+00:18:17,302 --> 00:18:21,892
+the load the operand one operand -
+that's three fetchers already then the
+
+248
+00:18:21,892 --> 00:18:23,842
+actual fetched from memory
+
+249
+00:18:23,842 --> 00:18:27,442
+so that's four but in case we have an
+overflow in case we have a carry into
+
+250
+00:18:27,442 --> 00:18:33,082
+into the eea here the be one page in
+here then the air
+
+251
+00:18:33,082 --> 00:18:38,871
+Lu has to do one extra step so that's
+five instructions and let's go through
+
+252
+00:18:38,871 --> 00:18:42,501
+all these real quick so six for
+something more complicated an increment
+
+253
+00:18:42,501 --> 00:18:48,082
+of zero pages 5 and what can really kill
+performances and RTS or jump subroutine
+
+254
+00:18:48,082 --> 00:18:51,892
+an RTS in a combination are already 12
+cycles that you're wasting right there
+
+255
+00:18:51,892 --> 00:18:57,712
+so think of it as specific some weird
+things about it
+
+256
+00:18:57,712 --> 00:19:01,371
+some you could consider bugs some just
+well you don't care but why do they
+
+257
+00:19:01,371 --> 00:19:02,182
+happen
+
+258
+00:19:02,182 --> 00:19:05,422
+so for example if you increment
+something in memory what you would
+
+259
+00:19:05,422 --> 00:19:06,111
+expect us
+
+260
+00:19:06,111 --> 00:19:09,172
+you read it you write it but what
+happens is it reads it
+
+261
+00:19:09,172 --> 00:19:13,162
+it writes back the original value
+sometimes within those four cycles or
+
+262
+00:19:13,162 --> 00:19:18,592
+six cycles and then it stores the new
+value so from a software perspective you
+
+263
+00:19:18,592 --> 00:19:21,022
+cannot see the difference but from a
+hardware perspective you can measure
+
+264
+00:19:21,022 --> 00:19:26,361
+that and you can build a computer around
+that and you can make use of that oddity
+
+265
+00:19:26,361 --> 00:19:30,532
+and build your copy protections or
+application around things like this
+
+266
+00:19:30,532 --> 00:19:35,512
+this one is a real bug if you have a
+break instruction
+
+267
+00:19:35,512 --> 00:19:39,412
+I mean you wouldn't have it in real code
+but in a debugger if you normally use it
+
+268
+00:19:39,412 --> 00:19:42,442
+for debugging and you put your break in
+if you want to know where your cold wind
+
+269
+00:19:42,442 --> 00:19:45,442
+but if you have a break and real code
+and an interrupt happens at the same
+
+270
+00:19:45,442 --> 00:19:49,972
+time then your break we'll just get lost
+the break will not be done just
+
+271
+00:19:49,972 --> 00:19:56,212
+interrupt will be handled and the this
+one big question mark here about illegal
+
+272
+00:19:56,212 --> 00:19:59,871
+opcodes this is this is the one thing
+that so many people have looked into
+
+273
+00:19:59,871 --> 00:20:00,652
+what
+
+274
+00:20:00,652 --> 00:20:03,712
+what happens if we use all these up all
+the other options what if we just put a
+
+275
+00:20:03,712 --> 00:20:07,101
+2 into the instruction stream what
+happens to this computer doesn't crash
+
+276
+00:20:07,101 --> 00:20:08,241
+does it do nothing
+
+277
+00:20:08,241 --> 00:20:14,572
+does it do something useful useless the
+answer is all of the above depending on
+
+278
+00:20:14,572 --> 00:20:18,142
+what should you use many people have
+done a lot of research on that and
+
+279
+00:20:18,142 --> 00:20:22,522
+compiled these tables if you use that
+code most of them don't really make all
+
+280
+00:20:22,522 --> 00:20:25,972
+that much sense it's mostly a
+combination of other things
+
+281
+00:20:25,972 --> 00:20:30,532
+some do make sense so now the question
+is how can we find out what exactly is
+
+282
+00:20:30,532 --> 00:20:34,192
+going on without just describing what we
+measured so we have to go from bottom up
+
+283
+00:20:34,192 --> 00:20:36,892
+we have to understand from a transistor
+level
+
+284
+00:20:36,892 --> 00:20:39,892
+what's going on inside the CPU so part
+two from bottom up
+
+285
+00:20:40,462 --> 00:20:42,462
+so if we want to
+
+286
+00:20:42,462 --> 00:20:46,392
+dive into the inner workings of a
+superior we could look at data sheets
+
+287
+00:20:46,392 --> 00:20:50,532
+but yeah we get something like pinouts
+we can also get something like timing
+
+288
+00:20:50,532 --> 00:20:51,462
+diagram state
+
+289
+00:20:51,462 --> 00:20:54,912
+tell us something about what's going on
+so the original documentation back in
+
+290
+00:20:54,912 --> 00:20:57,162
+those days world wasn't that bad
+
+291
+00:20:57,162 --> 00:21:00,942
+you can also get a schematic diagrams
+are block diagrams like this one but
+
+292
+00:21:00,942 --> 00:21:07,212
+this particular one is as neither useful
+nor correct because for example this one
+
+293
+00:21:07,212 --> 00:21:10,302
+internal bus but there's no internal but
+there's actually two into our buses and
+
+294
+00:21:10,302 --> 00:21:15,072
+that's a very in a very important
+difference what we can find some other
+
+295
+00:21:15,072 --> 00:21:18,792
+timing diagrams for example if you have
+an absolute index instruction
+
+296
+00:21:18,792 --> 00:21:22,782
+what happens in every single cycle
+that's useful but still doesn't really
+
+297
+00:21:22,782 --> 00:21:25,902
+tell us what's going on especially with
+the legal up cars or anything like that
+
+298
+00:21:25,902 --> 00:21:30,102
+so what can we do we can we get the
+extra information we could like dive
+
+299
+00:21:30,102 --> 00:21:34,272
+down from up and just ask someone asked
+that company
+
+300
+00:21:34,272 --> 00:21:38,052
+maybe you have some more documentation
+what
+
+301
+00:21:38,052 --> 00:21:42,852
+well we cannot really ask them because
+they got bought by Commodore 1976 must
+
+302
+00:21:42,852 --> 00:21:46,242
+doesn't exist or hasn't existed for a
+very long time with interesting , never
+
+303
+00:21:46,242 --> 00:21:49,962
+change the markings on the chip until
+all at least until nineteen ninety or so
+
+304
+00:21:49,962 --> 00:21:54,462
+until they would finally switch the
+camera semiconductor group CSG and so
+
+305
+00:21:54,462 --> 00:21:58,092
+most of my strips you can you will find
+will actually say moss still
+
+306
+00:21:58,092 --> 00:22:01,692
+but , for themselves got bankrupt in
+1994
+
+307
+00:22:01,692 --> 00:22:06,432
+then ask about them Jim to micro
+electronics cattle and some of the fabs
+
+308
+00:22:06,432 --> 00:22:12,372
+has come with a retailer German retailer
+which also get bankrupt in 95 and this
+
+309
+00:22:12,372 --> 00:22:16,182
+court was supposed to buy some stuff
+gateway bought all the amiga IP and all
+
+310
+00:22:16,182 --> 00:22:19,922
+the Commodore IP contact but other all
+the other
+
+311
+00:22:19,922 --> 00:22:25,292
+all the retail business with and spun
+off a company and they renamed
+
+312
+00:22:25,292 --> 00:22:28,832
+themselves so their commentary is out
+there somewhere and someone is working
+
+313
+00:22:28,832 --> 00:22:32,132
+on the Amigo as the source code of that
+is already there but who would you
+
+314
+00:22:32,132 --> 00:22:35,371
+really ask about who would you contact
+about getting more information about
+
+315
+00:22:35,371 --> 00:22:35,822
+that
+
+316
+00:22:35,822 --> 00:22:40,232
+well you could contact the original
+designers you could do that but the
+
+317
+00:22:40,232 --> 00:22:45,092
+problem there is we can't really ask
+them so do you maybe have another DVD
+
+318
+00:22:45,092 --> 00:22:50,462
+floppy disk type a paper tape punch card
+or something
+
+319
+00:22:50,462 --> 00:22:54,212
+they didn't have any of that because 6 f
+of 2 and other supplies from that time
+
+320
+00:22:54,212 --> 00:22:56,792
+were designed completely by hand
+
+321
+00:22:56,792 --> 00:23:00,512
+there were no computers involved so what
+you can see here is to lay out engineers
+
+322
+00:23:00,512 --> 00:23:06,452
+cutting rubylee that some kind of
+plastic foil cutting the the actual mask
+
+323
+00:23:06,452 --> 00:23:11,702
+that was later used that was later
+shrunk to about a square millimeter and
+
+324
+00:23:11,702 --> 00:23:16,802
+reduced to two are burned those
+processors so it
+
+325
+00:23:16,802 --> 00:23:22,532
+people wouldn't probably have some
+copies of these big sheets but some of
+
+326
+00:23:22,532 --> 00:23:25,802
+these that this documentation some of
+the stuff might still exist so in 95
+
+327
+00:23:25,802 --> 00:23:27,032
+something showed up
+
+328
+00:23:27,032 --> 00:23:34,352
+there's a somewhat wrote a paper about
+something and it had this nice
+
+329
+00:23:34,352 --> 00:23:39,482
+she to sit it's some original schematic
+diagram from the 65 / - it doesn't say
+
+330
+00:23:39,482 --> 00:23:43,352
+how he got it but it looks really good
+it's rather i love really nicely reverse
+
+331
+00:23:43,352 --> 00:23:47,822
+engineered or it's an original if we
+have a quick look at it we can see
+
+332
+00:23:47,822 --> 00:23:52,352
+there's a lot of program counter logic
+it's rather details so you can see a lot
+
+333
+00:23:52,352 --> 00:23:55,802
+of what's going on it and not all of it
+makes sense so by just looking at this
+
+334
+00:23:55,802 --> 00:24:01,322
+you wouldn't really know what's going on
+yet but that means that it probably is
+
+335
+00:24:01,322 --> 00:24:03,962
+done by someone who knew a lot about it
+
+336
+00:24:03,962 --> 00:24:07,621
+so the cycle counting goes on here the
+code is stored in the instruction
+
+337
+00:24:07,621 --> 00:24:13,322
+register and then forwarded to the
+decode rom and we have the registers
+
+338
+00:24:13,322 --> 00:24:17,852
+here they are the two buses the d-bus
+and the s bus which connect the
+
+339
+00:24:17,852 --> 00:24:20,322
+different registers to the ALU
+
+340
+00:24:20,322 --> 00:24:26,502
+and this is the ALU but also surface
+just recently is a couple of pages and
+
+341
+00:24:26,502 --> 00:24:30,822
+it seems to be the the complete
+schematic diagram of a 65 / - but it
+
+342
+00:24:30,822 --> 00:24:35,802
+doesn't seem to be the original it's in
+his markings about Atari 1985
+
+343
+00:24:35,802 --> 00:24:40,902
+I think 94 and it's just really engineer
+or something or some someone copied by
+
+344
+00:24:40,902 --> 00:24:45,462
+hand and it's it's missing a lot of the
+original meaning and interesting
+
+345
+00:24:45,462 --> 00:24:46,302
+markings there
+
+346
+00:24:46,302 --> 00:24:51,162
+there's another one a couple of pages
+this one is not complete rockwell 1982
+
+347
+00:24:51,162 --> 00:24:52,452
+handwritten
+
+348
+00:24:52,452 --> 00:24:55,872
+this looks more like the original
+because there's also the corrections and
+
+349
+00:24:55,872 --> 00:24:59,742
+everything and it's a lot more useful
+but yeah it's all not complete but the
+
+350
+00:24:59,742 --> 00:25:02,352
+question is where would you look if you
+wanted to reverse engineer something
+
+351
+00:25:02,352 --> 00:25:05,562
+properly you wouldn't try to steal the
+source code to get the source code from
+
+352
+00:25:05,562 --> 00:25:06,222
+somewhere
+
+353
+00:25:06,222 --> 00:25:10,902
+you look at the actual thing right so
+people have done by shots of it so this
+
+354
+00:25:10,902 --> 00:25:14,172
+is a very early one and everything
+people could understand about it was
+
+355
+00:25:14,172 --> 00:25:16,842
+well there's some decoder some logic and
+registers
+
+356
+00:25:16,842 --> 00:25:20,802
+that's everything that was understood
+about the dive shop in 2001
+
+357
+00:25:20,802 --> 00:25:27,282
+some guy with the first name of polish
+from Hungary take really high or a nicer
+
+358
+00:25:27,282 --> 00:25:31,182
+high-resolution photographs of the 6502
+with some old Russian microscope
+
+359
+00:25:32,172 --> 00:25:36,552
+all black and white but really great and
+she did a lot of work
+
+360
+00:25:36,552 --> 00:25:41,652
+reconstructing every single transistor
+and drawing this schematic diagram which
+
+361
+00:25:41,652 --> 00:25:44,652
+is completed his every single transistor
+
+362
+00:25:47,832 --> 00:25:51,032
+yeah
+
+363
+00:25:51,032 --> 00:25:55,741
+and he did that all by himself went
+alone and hungry and
+
+364
+00:25:57,611 --> 00:26:00,821
+then wrote a paper about it all in
+Hungarian
+
+365
+00:26:03,361 --> 00:26:05,602
+yeah
+
+366
+00:26:05,602 --> 00:26:10,852
+so some people just he was translated
+some some people translated some parts
+
+367
+00:26:10,852 --> 00:26:14,542
+of what he wrote and try to understand
+because because I understood a lot about
+
+368
+00:26:14,542 --> 00:26:19,852
+what was going on and the 6502 because
+of what he had learned from from copying
+
+369
+00:26:19,852 --> 00:26:23,272
+all those gates and but there were some
+other guys
+
+370
+00:26:23,782 --> 00:26:28,972
+Greg Barry Brian and dead who just
+recently so last it would they started
+
+371
+00:26:28,972 --> 00:26:32,452
+about one and a half years years ago to
+do the whole thing again and properly
+
+372
+00:26:32,452 --> 00:26:36,232
+and very high quality and debugging
+everything and making sure everything is
+
+373
+00:26:36,232 --> 00:26:37,552
+completely correct
+
+374
+00:26:37,552 --> 00:26:41,362
+and these are the guys from the visual
+6502 project which you have probably
+
+375
+00:26:41,362 --> 00:26:46,012
+seen so i'll tell you a little so
+originally it was supposed to be here
+
+376
+00:26:46,012 --> 00:26:50,962
+and to part of the slides so i'll just
+show you what I understand about them
+
+377
+00:26:50,962 --> 00:26:54,802
+what he does this would be far too
+dangerous for me is as cool as they
+
+378
+00:26:54,802 --> 00:27:00,022
+squirt hot sulfuric acid onto the chips
+to get the plastic off and to get to the
+
+379
+00:27:00,022 --> 00:27:01,312
+actual chip
+
+380
+00:27:01,312 --> 00:27:06,292
+sometimes it doesn't look that pretty
+but they work they can work if you clean
+
+381
+00:27:06,292 --> 00:27:08,482
+them properly and if you do it nicely
+
+382
+00:27:08,482 --> 00:27:12,262
+they can look like this let me show you
+some clothes up here
+
+383
+00:27:12,262 --> 00:27:17,782
+so in in this stage to you should
+actually still be working and so just
+
+384
+00:27:17,782 --> 00:27:22,072
+with a standard digital camera you can
+get a resolution like this and we have
+
+385
+00:27:22,072 --> 00:27:23,422
+three parts here already
+
+386
+00:27:23,422 --> 00:27:26,782
+and by the way what's important is the
+decoder is always on top that's the
+
+387
+00:27:26,782 --> 00:27:28,552
+correct orientation of 65 / -
+
+388
+00:27:28,552 --> 00:27:31,682
+so if you look closely was headed
+sideways
+
+389
+00:27:31,682 --> 00:27:36,692
+so the next step you need really
+high-resolution photographs of that and
+
+390
+00:27:36,692 --> 00:27:40,112
+you need some serious hardware for that
+really good microscopes
+
+391
+00:27:40,112 --> 00:27:45,062
+what greg did was take lots and lots of
+tiny photographs and then stitch them
+
+392
+00:27:45,062 --> 00:27:50,732
+together so one of these photographs
+would be this one looks already nice but
+
+393
+00:27:50,732 --> 00:27:54,542
+just taking photographs of just the
+surface wasn't enough because that
+
+394
+00:27:54,542 --> 00:27:57,212
+doesn't necessarily always show all the
+layers because you can see all these
+
+395
+00:27:57,212 --> 00:28:01,412
+layers three four five six seven there
+are many layers and you cannot always
+
+396
+00:28:01,412 --> 00:28:05,462
+distinguish those layers perfectly by
+just looking at it from the top so as a
+
+397
+00:28:05,462 --> 00:28:09,032
+second step we also removed all the
+layers with some extra chemicals to get
+
+398
+00:28:09,032 --> 00:28:12,152
+a shot like this so this destroys this
+if you
+
+399
+00:28:12,152 --> 00:28:17,882
+but yeah it's for the greater good of
+being able to reconstruct it better
+
+400
+00:28:18,751 --> 00:28:22,892
+so after stitching putting everything
+together at the end hitter two hundred
+
+401
+00:28:22,892 --> 00:28:27,302
+or so megapixel picture and it turned
+out six thousand by six thousand would
+
+402
+00:28:27,302 --> 00:28:32,042
+have been enough for reconstructing
+everything and he wrote some tool to
+
+403
+00:28:32,042 --> 00:28:37,232
+basically draw the polygons the original
+polygons of the traces and on top of the
+
+404
+00:28:37,232 --> 00:28:41,102
+the pictures that he took and so this is
+the first picture
+
+405
+00:28:41,102 --> 00:28:46,621
+this is the second picture and so it
+with his tool he threw the buyers and
+
+406
+00:28:46,621 --> 00:28:51,242
+through the traces and at the end you
+get all the traces just on top of that
+
+407
+00:28:51,242 --> 00:28:57,182
+and that this would be the complete 6502
+completely in in vectors and redrawn of
+
+408
+00:28:57,182 --> 00:28:58,232
+course need some debugging
+
+409
+00:28:58,232 --> 00:29:03,362
+so with with these tools and with a lot
+of manpower you get from this photograph
+
+410
+00:29:03,362 --> 00:29:09,902
+to this completely digital and really
+nicely colored presentation so if you
+
+411
+00:29:10,422 --> 00:29:15,251
+if if you look at the intersections of
+all these traces and at what layers at
+
+412
+00:29:15,251 --> 00:29:19,692
+what levels they are and understand in
+mass and how these processing this
+
+413
+00:29:19,692 --> 00:29:24,042
+processing was done from that you can
+derive the necklace and the necklace is
+
+414
+00:29:24,042 --> 00:29:27,222
+basically all the transistors and how
+the transistors are connected and how
+
+415
+00:29:27,222 --> 00:29:30,162
+the nodes are connected to the
+transistors and this necklace alone
+
+416
+00:29:30,162 --> 00:29:34,991
+specifies the complete working of the
+cpu so converting the netlist so this is
+
+417
+00:29:34,991 --> 00:29:40,182
+part 1 of the netlist this is part two
+and these are the pull-up transistors
+
+418
+00:29:40,182 --> 00:29:45,462
+so all this is about seven kilobytes of
+entropy is everything that is needed to
+
+419
+00:29:45,462 --> 00:29:46,991
+describe the 65 agree
+
+420
+00:29:46,991 --> 00:29:52,542
+so instead of trying to understand that
+now from some diagrams or something
+
+421
+00:29:52,542 --> 00:29:56,772
+the best thing is to simulate it and
+look at what's going on the question is
+
+422
+00:29:56,772 --> 00:29:59,682
+how would you stimulate to simulate all
+that you basically you simulate all of
+
+423
+00:29:59,682 --> 00:30:00,462
+physics
+
+424
+00:30:00,462 --> 00:30:05,562
+so you if if you have on the outside you
+have you can change pins for example you
+
+425
+00:30:05,562 --> 00:30:08,712
+toggle the clocks which then you have to
+look at all
+
+426
+00:30:08,712 --> 00:30:14,412
+all the nodes that are going from there
+to other transistors and you have to
+
+427
+00:30:14,412 --> 00:30:19,152
+look at what what the potential of of
+these noses and they have to share all
+
+428
+00:30:19,152 --> 00:30:23,682
+the same potential and from there so you
+can look at all of them
+
+429
+00:30:24,282 --> 00:30:27,672
+you look at the group value of the
+potential of the group and you said all
+
+430
+00:30:27,672 --> 00:30:30,852
+the new notes to the new potential and
+then you look at all the transistors
+
+431
+00:30:30,852 --> 00:30:34,302
+that are connected to all these notes
+and you need to switch some of those
+
+432
+00:30:34,302 --> 00:30:38,202
+transistors and then you look at all the
+notes behind those transistors and
+
+433
+00:30:38,202 --> 00:30:41,082
+repeat all that and if you repeat that
+long enough
+
+434
+00:30:41,082 --> 00:30:45,672
+the system will stabilize and all the
+notes will have some fixed potential and
+
+435
+00:30:45,672 --> 00:30:49,662
+then you're in the next stage and then
+you can flip clock again and then you're
+
+436
+00:30:49,662 --> 00:30:50,861
+in the next cycle
+
+437
+00:30:50,861 --> 00:30:56,292
+this is of course very slow but it has
+some really nice properties
+
+438
+00:30:56,292 --> 00:31:00,522
+so normally if you write an emulator I
+mean first mm you later would be you
+
+439
+00:31:00,522 --> 00:31:02,382
+right it's not the original code
+
+440
+00:31:02,382 --> 00:31:06,042
+it's just a copy it's just a real
+implementation the thing here is you
+
+441
+00:31:06,042 --> 00:31:06,822
+don't really
+
+442
+00:31:06,822 --> 00:31:10,542
+if you if you need to get it more and
+more complete you need to add a little
+
+443
+00:31:10,542 --> 00:31:13,712
+more of data but a lot more of code gets
+a lot more complexity in
+
+444
+00:31:13,712 --> 00:31:18,572
+complex and code if you do this with
+this necklace approach the emulator
+
+445
+00:31:18,572 --> 00:31:21,062
+which emulates physics is always the
+same
+
+446
+00:31:21,062 --> 00:31:25,502
+it's just a couple of hundred lines of
+code and you just add more polygons you
+
+447
+00:31:25,502 --> 00:31:26,702
+just add more data
+
+448
+00:31:26,702 --> 00:31:30,302
+so with an emulator like that you can
+emulate the photo or any other cpu done
+
+449
+00:31:30,302 --> 00:31:34,562
+in the same processor it doesn't even
+have to be a cpu so I told you it was
+
+450
+00:31:34,562 --> 00:31:35,612
+pretty slow
+
+451
+00:31:35,612 --> 00:31:38,492
+what do you do if you want to get
+something even slower you write in
+
+452
+00:31:38,492 --> 00:31:41,072
+JavaScript
+
+453
+00:31:41,072 --> 00:31:45,452
+yeah
+
+454
+00:31:46,182 --> 00:31:52,962
+so here's the whole html5 goodness of
+the visual 64 to simulator that those
+
+455
+00:31:52,962 --> 00:31:57,732
+guys did I wasn't involved in that you
+can see that it's all the blinking is
+
+456
+00:31:57,732 --> 00:32:01,932
+the clock counting up and all the
+different races and changing the
+
+457
+00:32:01,932 --> 00:32:03,972
+potential you can see on the right
+
+458
+00:32:03,972 --> 00:32:08,052
+how the clock is counting up and you can
+see it's about 23 hurts
+
+459
+00:32:08,052 --> 00:32:12,582
+and this is the maximum speed you can
+get so it's about a million times slower
+
+460
+00:32:12,582 --> 00:32:16,932
+than a real chip but you can zoom in you
+can look at all these things and there's
+
+461
+00:32:16,932 --> 00:32:21,192
+even an advanced mode in advanced mode
+I've turned off the image now if you're
+
+462
+00:32:21,192 --> 00:32:24,912
+running you can look at a lot of the
+internals a lot of the internal lines
+
+463
+00:32:24,912 --> 00:32:28,482
+what's going on there which component is
+outputting what so this helps so much
+
+464
+00:32:28,482 --> 00:32:32,412
+and understanding what's going on in
+these interesting edge cases but
+
+465
+00:32:32,412 --> 00:32:35,712
+speaking about simulation speaking about
+being slow
+
+466
+00:32:35,712 --> 00:32:39,552
+of course if you rewrite it in see maybe
+we can get a little faster
+
+467
+00:32:39,552 --> 00:32:47,202
+so this is where I come in and I wrote
+as see version of this thing looks a
+
+468
+00:32:47,202 --> 00:32:48,251
+little like that
+
+469
+00:32:48,251 --> 00:32:52,362
+and if you run it so in this small demo
+you'll see
+
+470
+00:32:52,362 --> 00:32:58,542
+I run the CD version and I feed it with
+the microsoft basic from the c64 takes a
+
+471
+00:32:58,542 --> 00:32:59,621
+while
+
+472
+00:32:59,621 --> 00:33:03,882
+takes a while now it's kat accounting
+the memory and the memory how many bytes
+
+473
+00:33:03,882 --> 00:33:05,862
+it has this many
+
+474
+00:33:05,862 --> 00:33:08,191
+ok yep
+
+475
+00:33:08,191 --> 00:33:11,551
+so seven seconds normally it's a couple
+of milliseconds so it's still a thousand
+
+476
+00:33:11,551 --> 00:33:12,691
+times slower
+
+477
+00:33:12,691 --> 00:33:15,871
+we're getting there we're still thinking
+about how how else we could make it
+
+478
+00:33:15,871 --> 00:33:16,711
+faster
+
+479
+00:33:16,711 --> 00:33:20,611
+so all these tools are really nice and
+understanding stuff for example we can
+
+480
+00:33:20,611 --> 00:33:24,631
+automate something like i'm testing
+through all the opcodes what do they do
+
+481
+00:33:24,631 --> 00:33:30,811
+which which registers do they change
+which which inputs which outputs how
+
+482
+00:33:30,811 --> 00:33:33,631
+long do they take we can measure all
+this completely automatically without
+
+483
+00:33:33,631 --> 00:33:37,231
+using real hardware because we have
+completely perfectly simulated hardware
+
+484
+00:33:37,231 --> 00:33:41,191
+we can also do some interesting texts
+like break transistors and see whether
+
+485
+00:33:41,191 --> 00:33:44,341
+the code still works and you can break a
+lot of transistors
+
+486
+00:33:44,341 --> 00:33:48,031
+so this means that our code just doesn't
+do everything that just doesn't exercise
+
+487
+00:33:48,031 --> 00:33:51,781
+all the transistors or another thing you
+could do with it is
+
+488
+00:33:51,781 --> 00:33:54,661
+I mean sure you can use it in an
+emulator but that's too slow what you
+
+489
+00:33:54,661 --> 00:33:58,981
+can do though is if you look at how many
+emulators there exists for example this
+
+490
+00:33:58,981 --> 00:34:03,391
+is the list just a collection of nes
+emulators out there and really if
+
+491
+00:34:03,391 --> 00:34:08,791
+everyone has written and 65 / - core for
+these and there were only four people
+
+492
+00:34:08,791 --> 00:34:13,081
+here we have written 6502 course and
+these always have bugs they're always
+
+493
+00:34:13,081 --> 00:34:17,402
+weird edge cases cited cases that that
+aren't handled properly and with this
+
+494
+00:34:17,402 --> 00:34:20,912
+perfect emulator now you can run them
+side by side and you can use the one to
+
+495
+00:34:20,911 --> 00:34:23,490
+test the other which is really nice
+
+496
+00:34:23,491 --> 00:34:27,451
+so what have we learned from all this
+what can we now understand about what's
+
+497
+00:34:27,451 --> 00:34:32,882
+going on inside the CPU part 3 from the
+inside out for everything here we have
+
+498
+00:34:32,882 --> 00:34:36,031
+to start with this really nice schematic
+diagram again
+
+499
+00:34:36,031 --> 00:34:39,121
+let's look at it a little more detail
+now program counter that's not all that
+
+500
+00:34:39,121 --> 00:34:42,481
+interesting sequenced and decoded this
+is where the actual personality of the
+
+501
+00:34:42,481 --> 00:34:46,351
+6502 comes from the rest is pretty
+standard the arithmetic and logic is
+
+502
+00:34:46,351 --> 00:34:52,142
+done like in any other cpu you have the
+registers here and stack pointer and the
+
+503
+00:34:52,942 --> 00:34:58,912
+status register again and the two buses
+so the s bus on the left is connected
+
+504
+00:34:58,912 --> 00:35:05,782
+more to a and the ALU and the s passes
+more connected to the indexing part of
+
+505
+00:35:05,782 --> 00:35:07,462
+the system
+
+506
+00:35:07,462 --> 00:35:11,722
+let's start it where instruction
+decoding starts or first let's start
+
+507
+00:35:11,722 --> 00:35:13,822
+with the with the timing generator
+
+508
+00:35:13,822 --> 00:35:19,132
+if you look at race what's going on if
+you run code you can see there's a lot
+
+509
+00:35:19,132 --> 00:35:20,512
+of interleaving going on there
+
+510
+00:35:20,512 --> 00:35:23,542
+one instruction is still not finished
+but the next one is pitched already this
+
+511
+00:35:23,542 --> 00:35:26,392
+is very much in contrast to something
+like the z80 where everything is
+
+512
+00:35:26,392 --> 00:35:29,542
+divisible by four cycles it always has
+its four cycles and then ok next
+
+513
+00:35:29,542 --> 00:35:31,582
+instruction for cycle 1 2 3 4
+
+514
+00:35:31,582 --> 00:35:34,582
+here we have a lot of interleaving so
+it's very memory bounds very fast
+
+515
+00:35:34,582 --> 00:35:39,502
+priciples so in this example way or you
+can see here the jump to the upper teens
+
+516
+00:35:39,502 --> 00:35:40,582
+not even finished
+
+517
+00:35:40,582 --> 00:35:44,212
+but we are in t0 in the first stage of
+the of the next instruction fetch
+
+518
+00:35:44,212 --> 00:35:49,732
+already here we end in the decode of the
+annex instruction here we execute the I
+
+519
+00:35:49,732 --> 00:35:53,362
+next instruction but we've already
+finished ady instruction which is the
+
+520
+00:35:53,362 --> 00:35:54,352
+next one
+
+521
+00:35:54,352 --> 00:35:57,982
+so there is quite some interleaving
+going on there
+
+522
+00:35:57,982 --> 00:36:03,232
+not in this case that if you look from
+here because the ink instruction has to
+
+523
+00:36:03,232 --> 00:36:07,132
+write back out into memory in its last
+cycle so we cannot fetch the next one at
+
+524
+00:36:07,132 --> 00:36:08,242
+the same time already
+
+525
+00:36:08,242 --> 00:36:13,462
+so because memory is already used so if
+you don't have overlapping here
+
+526
+00:36:13,462 --> 00:36:18,442
+this is done really really efficiently
+so timing generator
+
+527
+00:36:19,312 --> 00:36:24,712
+next piece is the decoder on that
+decoder on is you can easily see that
+
+528
+00:36:24,712 --> 00:36:31,612
+thing on this it's the the other piece
+the rom this is the big decoder it is 21
+
+529
+00:36:31,612 --> 00:36:35,722
+inputs it's really just a wrong as 21
+interest in a hundred and thirty outputs
+
+530
+00:36:35,722 --> 00:36:40,882
+and the way it works is the inputs are
+the instruction register which is the
+
+531
+00:36:40,882 --> 00:36:48,052
+code for example a 94 le a and T which
+is the the cycle in which we are inside
+
+532
+00:36:48,052 --> 00:36:51,382
+the instruction and depending on the
+opcode and the cycle
+
+533
+00:36:51,922 --> 00:36:55,012
+some of these lines will fire and it's
+not always just one line it can be any
+
+534
+00:36:55,012 --> 00:36:56,122
+number of lines
+
+535
+00:36:56,122 --> 00:36:59,722
+so for example in this these four lines
+were fire
+
+536
+00:36:59,722 --> 00:37:05,542
+so the the color on this is the complete
+the code on let's look at the first ones
+
+537
+00:37:05,542 --> 00:37:11,182
+in a little more close up that the color
+on compares the opcode and T as i said
+
+538
+00:37:11,182 --> 00:37:16,102
+so but it only looks at the the upper
+six bits of the opcode the close to bits
+
+539
+00:37:16,102 --> 00:37:19,552
+just ignores because what it actually
+looks at is this G value
+
+540
+00:37:20,062 --> 00:37:23,722
+I'll tell you about what Jesus on the
+next slide for now just assume it's part
+
+541
+00:37:23,722 --> 00:37:27,442
+of the opcode and at that time so
+there's always excess meaning don't care
+
+542
+00:37:27,442 --> 00:37:31,732
+so the first one would match to anything
+that starts with 100 and then has a one
+
+543
+00:37:31,732 --> 00:37:37,522
+of the other bit and would imagine any
+of the clock cycles of an any
+
+544
+00:37:37,522 --> 00:37:39,742
+instruction that that has this mask
+
+545
+00:37:39,742 --> 00:37:47,962
+so this G calculation this is this is a
+rule for g how she works g1 g2 g3 are
+
+546
+00:37:47,962 --> 00:37:52,072
+three separate lines which going to the
+decode rum and so this is a truth table
+
+547
+00:37:52,072 --> 00:37:54,232
+for it or a more useful to be this table
+
+548
+00:37:54,232 --> 00:38:01,402
+so there's a 00 01 10 and 11 corresponds
+to g values of T 3 g1 g2 and the 11 case
+
+549
+00:38:01,402 --> 00:38:06,652
+that's undefined that's not used for the
+6502 or what
+
+550
+00:38:07,612 --> 00:38:11,062
+how you can interpret this is that G
+actually encouraged which register we're
+
+551
+00:38:11,062 --> 00:38:16,042
+working on so the lowest two bits is is
+it a is x and y for certain instructions
+
+552
+00:38:16,042 --> 00:38:19,432
+others don't care about registers so
+they don't care about the g so it's a
+
+553
+00:38:19,432 --> 00:38:24,292
+don't care it's an X there and you can
+see this in your code table
+
+554
+00:38:24,292 --> 00:38:33,262
+the the columns 048 c and f 04 agency
+are the ones that mostly deal with why
+
+555
+00:38:33,262 --> 00:38:36,352
+other ones that deal with why are
+typically in those and then the next
+
+556
+00:38:36,352 --> 00:38:41,362
+column is all about a and the other one
+it's all about X so it's all about the
+
+557
+00:38:41,362 --> 00:38:42,532
+lowest to bits
+
+558
+00:38:42,532 --> 00:38:48,232
+yep and here's a short video of the
+decode Roman action you can see that all
+
+559
+00:38:48,232 --> 00:38:51,892
+the pink lines these are the lines that
+are firing in other cycles
+
+560
+00:38:51,892 --> 00:38:59,122
+let's work real quick through an Lda an
+LD X with the decoder on outputs
+
+561
+00:38:59,122 --> 00:39:04,972
+eliane elias are encoded very similarly
+so they are the only difference is the G
+
+562
+00:39:04,972 --> 00:39:06,202
+value that they have
+
+563
+00:39:06,202 --> 00:39:11,542
+so in clock cycles 123 they do exactly
+the same to have the same pla as a
+
+564
+00:39:11,542 --> 00:39:16,192
+decoder on PA rum outputs but in cycle
+number for this is where the difference
+
+565
+00:39:16,192 --> 00:39:22,072
+is the one output something about a the
+other one to something about X so this
+
+566
+00:39:22,072 --> 00:39:27,742
+is where they are different so moving on
+from the code rom to random control
+
+567
+00:39:27,742 --> 00:39:31,642
+logic so they could decode them only
+does that the front end for decoding and
+
+568
+00:39:31,642 --> 00:39:35,422
+ran around on controllogix the back end
+for the coding it takes as an input the
+
+569
+00:39:35,422 --> 00:39:40,732
+130 bits from the first stage and what
+it outputs is as you can see in this
+
+570
+00:39:40,732 --> 00:39:43,882
+close up early
+
+571
+00:39:44,392 --> 00:39:49,072
+yep these are all control lines which go
+directly into some of the components
+
+572
+00:39:49,072 --> 00:39:51,232
+like the ALU or the buses
+
+573
+00:39:51,232 --> 00:39:54,562
+so this is very very specific and
+controlling exactly what's going on
+
+574
+00:39:54,562 --> 00:39:59,212
+now let's look at this one example of
+connecting SP 2 X and connecting x2 s.b
+
+575
+00:39:59,212 --> 00:40:05,242
+this is the S bus in X is connected to
+it and you can either say let's load
+
+576
+00:40:05,242 --> 00:40:08,311
+from the S Plus into X or you can say
+
+577
+00:40:08,311 --> 00:40:12,392
+put the value of x 1 2 80's bus and
+these two control lines control whether
+
+578
+00:40:12,392 --> 00:40:13,322
+this is the case
+
+579
+00:40:13,322 --> 00:40:16,592
+so this random control logic I don't
+know where the name comes from maybe
+
+580
+00:40:16,592 --> 00:40:19,892
+because it's really that random it looks
+random we haven't found anything that
+
+581
+00:40:19,892 --> 00:40:23,551
+makes it easier to understand what it's
+doing
+
+582
+00:40:23,551 --> 00:40:26,642
+but let's let's look at the output of it
+for example
+
+583
+00:40:26,642 --> 00:40:31,741
+so here's the output of an increment X
+with the appeal a rom and the random
+
+584
+00:40:31,741 --> 00:40:34,172
+control logic in the first cycle in the
+second cycle
+
+585
+00:40:34,172 --> 00:40:39,932
+now let's look at this on the schematic
+diagram in the first cycle and increment
+
+586
+00:40:39,932 --> 00:40:44,372
+X has to get the information out of the
+Exorcist onto the S Plus and it puts it
+
+587
+00:40:44,372 --> 00:40:49,741
+into the a input of the ALU but it also
+has to put into the ALU is a one on the
+
+588
+00:40:49,741 --> 00:40:50,971
+other side to add it
+
+589
+00:40:50,971 --> 00:40:55,771
+this it does it by putting a 0 in there
+by asserting this line and adding a
+
+590
+00:40:55,771 --> 00:40:57,842
+carrier of one and saying
+
+591
+00:40:57,842 --> 00:41:02,672
+yep we want to some so in the next cycle
+we will have the result in em in the
+
+592
+00:41:02,672 --> 00:41:07,561
+aderhold register on the right of the lu
+then in the second cycle
+
+593
+00:41:08,251 --> 00:41:13,382
+we have to get the whole register output
+put it onto the S Plus with these these
+
+594
+00:41:13,382 --> 00:41:16,652
+two control lines and we store it into X
+in there
+
+595
+00:41:16,652 --> 00:41:23,461
+there are a few more focus junk control
+lines there to keep the ALU occupied
+
+596
+00:41:23,461 --> 00:41:27,241
+which are a side effect of how the way
+is encoded and that everything is
+
+597
+00:41:27,241 --> 00:41:30,181
+encoded and the way they don't care
+works so it doesn't have any influence
+
+598
+00:41:30,181 --> 00:41:34,231
+on what's actually going on but there
+are two more lines that are asserted the
+
+599
+00:41:34,231 --> 00:41:39,061
+one that sits 0 flag and the other one
+persistent in that sense the negative
+
+600
+00:41:39,061 --> 00:41:45,481
+flag from the output so break I acute MI
+and reset
+
+601
+00:41:45,481 --> 00:41:49,021
+that's an interesting one how how this
+is all sequence how this is done in the
+
+602
+00:41:49,021 --> 00:41:51,092
+sequencer in india and the logic
+
+603
+00:41:51,092 --> 00:41:56,102
+so as it is see again this is these
+these are the vectors on the top of the
+
+604
+00:41:56,102 --> 00:41:56,912
+address space
+
+605
+00:41:56,912 --> 00:42:00,211
+it's all really similar what's going on
+here and I a queue pushes the program
+
+606
+00:42:00,211 --> 00:42:05,431
+counter pushes the status register and
+jumps over certain vector if you have a
+
+607
+00:42:05,431 --> 00:42:09,632
+break instruction software interrupt it
+does the same thing but it puts the
+
+608
+00:42:09,632 --> 00:42:11,952
+break it onto the stack
+
+609
+00:42:11,952 --> 00:42:16,842
+NM is the same as an IQ but a different
+vector and reset only jumps over vector
+
+610
+00:42:16,842 --> 00:42:20,262
+but that's not actually true because i
+reset also does this exactly this
+
+611
+00:42:20,262 --> 00:42:25,002
+incredible pushes pc pushes p but nobody
+cares because you have reset anyway so
+
+612
+00:42:25,002 --> 00:42:28,002
+this is not really known or useful or
+interesting
+
+613
+00:42:28,662 --> 00:42:32,952
+so if you look at the whole table of
+what's going on this no in push pc and
+
+614
+00:42:32,952 --> 00:42:36,522
+pee in the recent line here is actually
+also yes so this is all rather
+
+615
+00:42:36,522 --> 00:42:41,412
+orthogonal is always the same code that
+is running and so this is the code again
+
+616
+00:42:41,412 --> 00:42:46,482
+so it's there's two fetchers there's a
+store of the PCH store pcl sort of p
+
+617
+00:42:46,482 --> 00:42:49,692
+fetching of the vector low fetching of
+the vector higher than the future of the
+
+618
+00:42:49,692 --> 00:42:52,002
+new instruction
+
+619
+00:42:52,002 --> 00:42:55,212
+now the question is how can you how can
+this be done for an interrupt for a
+
+620
+00:42:55,212 --> 00:42:58,542
+break instruction that's easy because
+it's an instruction it gets sequence by
+
+621
+00:42:58,542 --> 00:43:04,152
+the PLA rom but how do you do that about
+an intro and the trick here is done in
+
+622
+00:43:04,152 --> 00:43:08,172
+this box called a pretty cold logic you
+can see that this has the interrupt and
+
+623
+00:43:08,172 --> 00:43:10,092
+reset pins as inputs
+
+624
+00:43:10,092 --> 00:43:15,972
+what it does is normally the instruction
+register the opcode is fed by the code
+
+625
+00:43:15,972 --> 00:43:21,132
+that comes from the data bus but there's
+also a zero input and there's the the IQ
+
+626
+00:43:21,132 --> 00:43:22,692
+and my and reset lines go in there
+
+627
+00:43:22,692 --> 00:43:27,642
+so whenever there's an IQ mi or a reset
+then the instruction register is not
+
+628
+00:43:27,642 --> 00:43:31,842
+loaded with the actual instruction but
+with a zero so what this does is it
+
+629
+00:43:31,842 --> 00:43:37,752
+injects 0 into the print to the program
+stream and the 0 you might remember is
+
+630
+00:43:37,752 --> 00:43:41,622
+the brake instruction so this is really
+neat trick here
+
+631
+00:43:41,622 --> 00:43:45,972
+injecting a break instruction which does
+the whole sequence of what's going on
+
+632
+00:43:45,972 --> 00:43:49,212
+but afterwards it has to clean up and do
+the right Victor and has to put the
+
+633
+00:43:49,212 --> 00:43:53,052
+brake flag properly and everything so it
+has to cash that in information
+
+634
+00:43:53,052 --> 00:43:58,122
+somewhere but the sequences in has done
+with the break but this is exactly where
+
+635
+00:43:58,122 --> 00:44:00,852
+this but came from you remember that the
+break bug
+
+636
+00:44:00,852 --> 00:44:05,292
+if a break if you have a break and an IQ
+happens at exactly the same time the
+
+637
+00:44:05,292 --> 00:44:09,012
+break we'll get ignored this is exactly
+because of this because it injects a
+
+638
+00:44:09,012 --> 00:44:12,012
+break for the irq and then well it drops
+the break
+
+639
+00:44:13,842 --> 00:44:17,202
+some other things that can be explained
+with extra knowledge that we gain from
+
+640
+00:44:17,202 --> 00:44:23,172
+that is the RM w double store which is
+actually already documented and so the
+
+641
+00:44:23,172 --> 00:44:28,002
+original documentation say say there's a
+destroy destroy memory cycle in there
+
+642
+00:44:28,002 --> 00:44:31,962
+because they have it was just a don't
+care if you if we look at the PLA from
+
+643
+00:44:31,962 --> 00:44:35,022
+outputs we can see that there's an
+explicit
+
+644
+00:44:35,022 --> 00:44:38,292
+i mean it's it's it's done that way I
+guess they optimize something so we
+
+645
+00:44:38,292 --> 00:44:41,652
+don't understand why but we can see
+where it's happening
+
+646
+00:44:41,652 --> 00:44:46,392
+so this is illegal of course these are
+the holy grail of all understanding the
+
+647
+00:44:46,392 --> 00:44:49,392
+6502 and I think we have made some
+progress there
+
+648
+00:44:50,022 --> 00:44:54,702
+what people have done so far is mostly
+well measure them and see what what are
+
+649
+00:44:54,702 --> 00:44:55,392
+they doing
+
+650
+00:44:55,392 --> 00:44:59,352
+and there were some theories about yeah
+they seem to combine the ones that are
+
+651
+00:44:59,352 --> 00:45:02,802
+close to them but now we can say a lot
+more about them
+
+652
+00:45:02,802 --> 00:45:06,762
+so the killer for example they're all
+these most of them that end into they
+
+653
+00:45:06,762 --> 00:45:07,752
+just hold the machine
+
+654
+00:45:07,752 --> 00:45:11,712
+reset still works but you are accusing
+NM eyes won't get delivered
+
+655
+00:45:11,712 --> 00:45:17,172
+what is happening here we can see in the
+diagram by looking at the timing
+
+656
+00:45:17,172 --> 00:45:20,172
+generator because the timing generator
+actually has an input from random
+
+657
+00:45:20,172 --> 00:45:23,892
+control logic because at some point I'm
+the timing generator must know when to
+
+658
+00:45:23,892 --> 00:45:27,942
+the next pitch went to go to t0 again
+and rent control logic knows that
+
+659
+00:45:27,942 --> 00:45:33,222
+because it has all the information about
+from the decoder am indirectly what
+
+660
+00:45:33,222 --> 00:45:36,702
+state we are in what instruction we were
+in and will tell it at some point
+
+661
+00:45:36,702 --> 00:45:42,192
+let's restart it 0 and this is exactly
+what's going wrong with kill you have to
+
+662
+00:45:42,192 --> 00:45:48,792
+stay here on the left and the state more
+detail with 0 1 2 3 4 as 45 as bits in
+
+663
+00:45:48,792 --> 00:45:54,192
+the killer code so that we are in t1 so
+the one bit is set T to some random
+
+664
+00:45:54,192 --> 00:45:57,342
+stuff happens we don't care what's
+happening there but what you can see is
+
+665
+00:45:57,342 --> 00:46:01,932
+that the way the sequence of works that
+shifts the one to the right so it
+
+666
+00:46:01,932 --> 00:46:06,942
+shifted into t3 t4 t5 and nobody ever
+says okay do the next fetch
+
+667
+00:46:06,942 --> 00:46:12,192
+so just shifted out and so we're now in
+no state and nothing will have a match
+
+668
+00:46:12,192 --> 00:46:16,122
+again and we'll never catch the next
+instruction so the next one will be just
+
+669
+00:46:16,122 --> 00:46:23,202
+the same and the machine is just wedged
+so some are a little more helpful then
+
+670
+00:46:23,202 --> 00:46:26,832
+kill so if we make them lighter and
+darker
+
+671
+00:46:27,372 --> 00:46:31,872
+depending on how useful they are there's
+not there's a lot of knots which can be
+
+672
+00:46:31,872 --> 00:46:36,972
+rather easily explained by well there's
+not there are no pla lines that match
+
+673
+00:46:36,972 --> 00:46:41,172
+them so they don't do much but the
+timing is controlled by the one on the
+
+674
+00:46:41,172 --> 00:46:42,432
+left or the one on the right
+
+675
+00:46:42,432 --> 00:46:48,462
+because there's a don't care somewhere
+but some interesting ones that can be
+
+676
+00:46:48,462 --> 00:46:49,722
+explained
+
+677
+00:46:49,722 --> 00:46:54,072
+especially because they are actually
+useful is the essay acts and the lax
+
+678
+00:46:54,072 --> 00:46:54,702
+ones
+
+679
+00:46:54,702 --> 00:46:58,422
+so you can see whenever there's an L and
+my ax
+
+680
+00:46:58,422 --> 00:47:03,372
+on the right you can see one that seems
+to combine a index for storing and for
+
+681
+00:47:03,372 --> 00:47:08,412
+loading and this is because well I to do
+before this is undefined here is not
+
+682
+00:47:08,412 --> 00:47:13,302
+actually undefined because of the way
+that you wanted the g2 is calculated in
+
+683
+00:47:13,302 --> 00:47:19,062
+this 11 case this is actually the case
+of g1 and g2 at the same time so the a
+
+684
+00:47:19,062 --> 00:47:21,762
+case is correct index case is correct
+
+685
+00:47:21,762 --> 00:47:28,242
+so if we go through step by step for an
+Lda ldx and LAX
+
+686
+00:47:28,242 --> 00:47:32,202
+you will see that in the first
+instructions while the LDA and the lax
+
+687
+00:47:32,202 --> 00:47:38,082
+do the same anyway into 123 124 the LDA
+do something with a the other one does
+
+688
+00:47:38,082 --> 00:47:40,992
+something with X in LAX just true for
+both
+
+689
+00:47:40,992 --> 00:47:46,152
+so this is the store into the register
+so it stores it into a or in stores into
+
+690
+00:47:46,152 --> 00:47:53,502
+X at the same time because both of these
+control lines are set so there's a lot
+
+691
+00:47:53,502 --> 00:47:57,162
+more about legal codes that can be
+explained that way by just looking at
+
+692
+00:47:57,162 --> 00:48:02,382
+these traces but that would require
+quite a lot of time and there are even
+
+693
+00:48:02,382 --> 00:48:05,982
+some that we're still looking at so the
+question is what
+
+694
+00:48:05,982 --> 00:48:09,012
+there's a lot of people involved right
+now that are doing this reverse
+
+695
+00:48:09,012 --> 00:48:12,852
+engineering on the mailing list and our
+internal wiki
+
+696
+00:48:12,852 --> 00:48:17,892
+so what what is happening there is that
+we're still investigating a lot more of
+
+697
+00:48:17,892 --> 00:48:23,082
+these things understanding how some of
+them are unstable and how some other
+
+698
+00:48:23,082 --> 00:48:26,392
+things work so one thing that we have
+some really interesting in
+
+699
+00:48:26,392 --> 00:48:32,271
+internal representation is this is the
+mapping from from the up code
+
+700
+00:48:32,271 --> 00:48:36,112
+- what comes out of the random control
+logic is the very last step so you can
+
+701
+00:48:36,112 --> 00:48:37,822
+rather easily look up
+
+702
+00:48:37,822 --> 00:48:42,561
+what's going on the bus in every cycle
+of certain instructions but we're not
+
+703
+00:48:42,561 --> 00:48:49,072
+only investigating the 6502 by itself
+but also the different the different 65
+
+704
+00:48:49,072 --> 00:48:51,502
+our tools that are out there are so many
+things to do
+
+705
+00:48:51,502 --> 00:48:58,521
+for example does anyone recognize this
+ship it is a tiny little while
+
+706
+00:48:58,521 --> 00:49:02,992
+not so tiny 65 or two on the bottom
+right you can see here looks exactly
+
+707
+00:49:02,992 --> 00:49:09,502
+like a normal 65 / - this is the cpu in
+the nes so it has the normal i guess
+
+708
+00:49:09,502 --> 00:49:13,372
+licensed version of 65 or two in there
+and some video and audio logic in the
+
+709
+00:49:13,372 --> 00:49:17,332
+same chip and there's some other
+versions of the 64 to as well looking at
+
+710
+00:49:17,332 --> 00:49:26,182
+them and comparing them is is can tell
+us a lot about whether they fixed bugs
+
+711
+00:49:26,182 --> 00:49:31,432
+or something so for example and very old
+versions and had some bug still was
+
+712
+00:49:31,432 --> 00:49:34,162
+fixed in standard 65 over to rockwell
+licensed it
+
+713
+00:49:34,162 --> 00:49:38,541
+we looked at it looks a little different
+there's a shrink used in later ,
+
+714
+00:49:38,541 --> 00:49:44,182
+computers and there's in the customers
+to 64 and the c128 there's another drink
+
+715
+00:49:44,182 --> 00:49:46,311
+and 85 X series
+
+716
+00:49:46,311 --> 00:49:49,432
+so looking at all these would be
+interesting but why stop there why not
+
+717
+00:49:49,432 --> 00:49:52,912
+look at other cpus we have really nice
+representation of the ad and people are
+
+718
+00:49:52,912 --> 00:49:55,432
+looking at into vectorizing it right now
+
+719
+00:49:55,432 --> 00:49:59,092
+sixty thousand that thing is complex
+that's 10 times as big as anything else
+
+720
+00:49:59,092 --> 00:50:02,092
+but yeah people are vectorizing that one
+as well
+
+721
+00:50:02,092 --> 00:50:07,281
+why not use a quickly computer why not
+you look well we have the 6502 already
+
+722
+00:50:07,281 --> 00:50:11,152
+let's do the video controller the audio
+control of the i/o controllers and then
+
+723
+00:50:11,152 --> 00:50:14,452
+we could have a completely 64 in perfect
+simulation and test all the other
+
+724
+00:50:14,452 --> 00:50:15,771
+emulators against it
+
+725
+00:50:15,771 --> 00:50:19,642
+this thing can all be done by
+distributing the work because that would
+
+726
+00:50:19,642 --> 00:50:24,742
+be way too much for one single person
+and it is actually working on making his
+
+727
+00:50:24,742 --> 00:50:28,912
+editor to work with more people
+
+728
+00:50:28,912 --> 00:50:32,422
+another thing to be done is just the
+chips is not necessary enough
+
+729
+00:50:33,762 --> 00:50:38,742
+also x-raying the PCB is then you then
+you have the full chip then here then
+
+730
+00:50:38,742 --> 00:50:43,572
+you have two full system that's
+something that we're looking into or why
+
+731
+00:50:43,572 --> 00:50:49,662
+simulated in my simulated and software
+if you can simulate it on fpga so
+
+732
+00:50:49,662 --> 00:50:57,342
+someone is also working on baking a 65
+or two on two real hardware again and so
+
+733
+00:50:57,342 --> 00:51:02,022
+that was it if you want more information
+on visual 6502 dorg
+
+734
+00:51:02,622 --> 00:51:06,252
+we have all the chip images all the
+information we have a wiki we have the
+
+735
+00:51:06,252 --> 00:51:09,252
+JavaScript simulator that you know the
+factorization - we'll be there shortly
+
+736
+00:51:09,792 --> 00:51:14,502
+64 to hackers is a mailing list with
+lots of great people and it's closed
+
+737
+00:51:14,502 --> 00:51:17,982
+right now you can apply for membership
+and we're planning to open it and of
+
+738
+00:51:17,982 --> 00:51:19,812
+course there is my blog
+
+739
+00:51:19,812 --> 00:51:26,482
+thank you
+
+740
+00:51:26,482 --> 00:51:29,482
+yeah
+
+741
+00:51:34,311 --> 00:51:39,172
+Thank You Michelle does anyone here has
+questions

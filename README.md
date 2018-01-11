@@ -6,6 +6,8 @@ Chinese translation scripts for YouTube videos.
 - CCC : Chaos Communication Congress Talks
 - ObsoleteGeek : The Obsolete Geek
 - MVG : Modern Vintage Gamer
+- LGR : Lazy Game Reviews
+- Adrian : Adrian Black
 
 # License
 
